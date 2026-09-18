@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<!-- Proveedores Dev — Base de datos de proveedores (nhood Development) -->
+<!-- Version: 05 -->
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proveedores Dev · v05</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.4.0/dist/tabler-icons.min.css">
+<style>
+:root{
+  --bg:#f4f6f5; --panel:#ffffff; --border:#dde3e0; --text:#1c2320; --text-mut:#65726c;
+  --accent:#008837; --accent-h:#006b2a; --accent-l:#e3f5ea;
+  --danger:#c0392b; --warn:#b8860b; --shadow:0 4px 16px rgba(0,0,0,.08);
+  --radius:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#14181a; --panel:#1c2224; --border:#2b3336; --text:#e8ece9; --text-mut:#93a09a;
+    --accent:#4EA72E; --accent-h:#7DC87A; --accent-l:#0d2e14;
+    --shadow:0 4px 16px rgba(0,0,0,.4);
+  }
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);}
+a{color:var(--accent);}
+button{font-family:inherit;cursor:pointer;}
+.app{display:flex;min-height:100vh;}
+/* Sidebar */
+.sidebar{width:210px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s;}
+.sidebar.collapsed{width:60px;}
+.side-brand{padding:16px;font-weight:700;font-size:15px;color:var(--accent);display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden;border-bottom:1px solid var(--border);}
+.side-nav{flex:1;padding:8px;}
+.side-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:var(--text-mut);text-decoration:none;font-size:14px;margin-bottom:2px;white-space:nowrap;overflow:hidden;}
+.side-item i{font-size:18px;flex-shrink:0;}
+.side-item:hover{background:var(--accent-l);color:var(--accent);}
+.side-item.active{background:var(--accent-l);color:var(--accent);font-weight:600;}
+.side-toggle{padding:12px;border:none;background:none;color:var(--text-mut);border-top:1px solid var(--border);}
+/* Main */
+.main{flex:1;min-width:0;display:flex;flex-direction:column;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--panel);gap:12px;flex-wrap:wrap;}
+.topbar h1{font-size:18px;margin:0;}
+.content{padding:20px;flex:1;overflow:auto;}
+.hidden{display:none !important;}
+/* Filters */
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
+.filters input[type=text]{padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--text);min-width:220px;}
+.btn{padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--panel);color:var(--text);font-size:13px;display:inline-flex;align-items:center;gap:6px;}
+.btn:hover{border-color:var(--accent);color:var(--accent);}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.btn-primary:hover{background:var(--accent-h);color:#fff;}
+.btn-danger{color:var(--danger);}
+.count-badge{color:var(--text-mut);font-size:13px;}
+/* Table */
+table{width:100%;border-collapse:collapse;background:var(--panel);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);font-size:13px;vertical-align:top;}
+th{background:var(--accent-l);color:var(--accent-h);font-weight:600;cursor:pointer;user-select:none;white-space:nowrap;}
+th .sort-ic{opacity:.4;margin-left:4px;font-size:11px;}
+th.sorted .sort-ic{opacity:1;}
+tbody tr{cursor:pointer;}
+tbody tr:hover{background:var(--accent-l);}
+.chip{display:inline-block;padding:2px 8px;border-radius:12px;background:var(--accent-l);color:var(--accent-h);font-size:11px;margin:2px 3px 0 0;white-space:nowrap;}
+.chip-row{display:flex;flex-wrap:wrap;max-width:260px;}
+.mut{color:var(--text-mut);}
+.sugg-item{padding:8px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border);}
+.sugg-item:last-child{border-bottom:none;}
+.sugg-item:hover, .sugg-item.active{background:var(--accent-l);color:var(--accent-h);}
+.sugg-item .sugg-mut{color:var(--text-mut);font-size:11px;}
+/* Panel lateral */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:40;}
+.panel{position:fixed;top:0;right:0;height:100vh;width:440px;max-width:94vw;background:var(--panel);box-shadow:-6px 0 24px rgba(0,0,0,.18);z-index:50;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .22s ease;}
+.panel.open{transform:translateX(0);}
+.panel-head{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.panel-head input.pname{font-size:16px;font-weight:700;border:none;background:none;color:var(--text);width:100%;padding:4px 0;border-bottom:1px dashed transparent;}
+.panel-head input.pname:focus{outline:none;border-bottom-color:var(--accent);}
+.panel-close{background:none;border:none;font-size:20px;color:var(--text-mut);}
+.tabs{display:flex;border-bottom:1px solid var(--border);}
+.tab{flex:1;padding:10px;text-align:center;font-size:13px;color:var(--text-mut);border-bottom:2px solid transparent;}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
+.panel-body{flex:1;overflow:auto;padding:16px 18px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--text-mut);margin-bottom:4px;}
+.field input[type=text],.field textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;font-family:inherit;}
+.field textarea{min-height:60px;resize:vertical;}
+.panel-foot{padding:14px 18px;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:8px;}
+/* Tag picker */
+.tagpicker{border:1px solid var(--border);border-radius:8px;padding:8px;background:var(--bg);}
+.tp-chips{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;min-height:20px;}
+.tp-chip{display:inline-flex;align-items:center;gap:4px;background:var(--accent-l);color:var(--accent-h);padding:2px 6px 2px 9px;border-radius:12px;font-size:11px;}
+.tp-chip button{background:none;border:none;color:var(--accent-h);font-size:13px;padding:0;line-height:1;}
+.tp-add{font-size:12px;color:var(--accent);background:none;border:1px dashed var(--accent);border-radius:8px;padding:4px 8px;}
+.tp-dropdown{position:relative;margin-top:6px;}
+.tp-search{width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--panel);color:var(--text);font-size:12px;margin-bottom:6px;}
+.tp-options{max-height:180px;overflow:auto;border:1px solid var(--border);border-radius:6px;background:var(--panel);}
+.tp-opt{display:flex;align-items:center;gap:6px;padding:6px 8px;font-size:12px;border-bottom:1px solid var(--border);}
+.tp-opt:last-child{border-bottom:none;}
+.tp-opt:hover{background:var(--accent-l);}
+/* Actividad */
+.cmt{border-bottom:1px solid var(--border);padding:10px 0;font-size:13px;}
+.cmt-meta{color:var(--text-mut);font-size:11px;margin-bottom:4px;}
+.compose{display:flex;gap:8px;margin-top:12px;}
+.compose textarea{flex:1;min-height:44px;}
+/* Toast */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--text);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:13px;z-index:100;box-shadow:var(--shadow);opacity:0;transform:translateY(8px);transition:.2s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateY(0);}
+.toast.err{background:var(--danger);color:#fff;}
+/* Config */
+.config-box{max-width:480px;background:var(--panel);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);}
+.config-box .field{margin-bottom:16px;}
+.stat-row{display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap;}
+.stat{background:var(--panel);border-radius:var(--radius);padding:14px 18px;box-shadow:var(--shadow);min-width:120px;}
+.stat .n{font-size:22px;font-weight:700;color:var(--accent);}
+.stat .l{font-size:12px;color:var(--text-mut);}
+@media(max-width:760px){
+  .sidebar{position:fixed;left:0;top:0;height:100vh;z-index:60;transform:translateX(-100%);}
+  .sidebar.mobile-open{transform:translateX(0);}
+  table{font-size:12px;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar" id="sidebar">
+    <div class="side-brand"><i class="ti ti-truck-delivery"></i> <span class="lbl">Proveedores Dev</span></div>
+    <div class="lbl" style="padding:0 16px 10px;font-size:11px;color:var(--text-mut);">v05</div>
+    <div class="side-nav">
+      <a href="#" class="side-item active" data-view="proveedores" onclick="switchView('proveedores');return false;"><i class="ti ti-building-warehouse"></i><span class="lbl">Proveedores</span></a>
+      <a href="#" class="side-item" data-view="config" onclick="switchView('config');return false;"><i class="ti ti-settings"></i><span class="lbl">Configuración</span></a>
+    </div>
+    <button class="side-toggle" onclick="toggleSidebar()"><i class="ti ti-chevrons-left"></i></button>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <h1 id="view-title">Proveedores</h1>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span class="mut" id="sync-status" style="font-size:12px;"></span>
+        <button class="btn" onclick="syncNow()"><i class="ti ti-refresh"></i> Sincronizar</button>
+        <button class="btn btn-primary" id="btn-nuevo" onclick="openNewPanel()"><i class="ti ti-plus"></i> Nuevo proveedor</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- VISTA PROVEEDORES -->
+      <div id="view-proveedores">
+        <div class="stat-row">
+          <div class="stat"><div class="n" id="stat-total">0</div><div class="l">Proveedores</div></div>
+          <div class="stat"><div class="n" id="stat-visible">0</div><div class="l">Visibles (filtro)</div></div>
+          <div class="stat"><div class="n" id="stat-lotes">0</div><div class="l">Lotes en uso</div></div>
+        </div>
+        <div class="filters">
+          <div style="position:relative;">
+            <input type="text" id="f-search" placeholder="Buscar por nombre, contacto, email..." autocomplete="off"
+              oninput="onSearchInput(this.value)" onkeydown="onSearchKeydown(event)" onblur="onSearchBlur()">
+            <div id="search-suggest" class="hidden" style="position:absolute;top:100%;left:0;right:0;z-index:30;background:var(--panel);border:1px solid var(--border);border-radius:8px;margin-top:4px;box-shadow:var(--shadow);max-height:280px;overflow:auto;"></div>
+          </div>
+          <div class="tagpicker" style="width:260px;" id="filter-lotes"></div>
+          <div class="tagpicker" style="width:220px;" id="filter-proyecto"></div>
+          <button class="btn" onclick="clearFilters()"><i class="ti ti-x"></i> Limpiar filtros</button>
+          <span style="flex:1"></span>
+          <label style="font-size:12px;display:flex;align-items:center;gap:4px;"><input type="checkbox" id="export-onlyfiltered" checked> Solo visibles</label>
+          <button class="btn" onclick="exportExcel()"><i class="ti ti-file-spreadsheet"></i> Excel</button>
+          <button class="btn" onclick="exportPDF()"><i class="ti ti-file-type-pdf"></i> PDF</button>
+        </div>
+        <div style="overflow:auto;">
+          <table>
+            <thead id="prov-thead"></thead>
+            <tbody id="prov-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- VISTA CONFIG -->
+      <div id="view-config" class="hidden">
+        <div class="config-box">
+          <div class="field">
+            <label>Personal Access Token de Asana</label>
+            <input type="text" id="cfg-pat" placeholder="Pega aquí tu PAT">
+          </div>
+          <button class="btn btn-primary" onclick="savePat()"><i class="ti ti-device-floppy"></i> Guardar y sincronizar</button>
+          <hr style="border-color:var(--border);margin:20px 0;">
+          <button class="btn" onclick="clearCache()"><i class="ti ti-trash"></i> Limpiar caché local</button>
+          <p class="mut" style="font-size:12px;margin-top:16px;">
+            Proyecto Asana: <b>Proveedores dev</b> (GID 1211034509616545)<br>
+            Sección: Empresa/ organismo<br>
+            El PAT se guarda solo en este navegador (localStorage), nunca se envía a ningún otro servicio.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Panel lateral -->
+<div class="overlay hidden" id="overlay" onclick="closePanel()"></div>
+<div class="panel" id="panel">
+  <div class="panel-head">
+    <input type="text" class="pname" id="panel-name" placeholder="Nombre de la empresa" onblur="onNameBlur()">
+    <button class="panel-close" onclick="closePanel()"><i class="ti ti-x"></i></button>
+  </div>
+  <div class="tabs" id="panel-tabs">
+    <div class="tab active" data-tab="info" onclick="switchPanelTab('info')">Información</div>
+    <div class="tab" data-tab="contactos" onclick="switchPanelTab('contactos')">Contactos</div>
+    <div class="tab" data-tab="actividad" onclick="switchPanelTab('actividad')">Actividad</div>
+  </div>
+  <div class="panel-body">
+    <div id="ptab-info"></div>
+    <div id="ptab-contactos" class="hidden"></div>
+    <div id="ptab-actividad" class="hidden"></div>
+  </div>
+  <div class="panel-foot">
+    <button class="btn btn-danger" id="btn-delete" onclick="onDeleteClick()"><i class="ti ti-trash"></i> Eliminar proveedor</button>
+    <a href="#" class="btn" id="btn-asana-link" onclick="return onOpenAsanaClick(event)"><i class="ti ti-external-link"></i> Abrir en Asana</a>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+<script>
+/* ==================== CONFIG ==================== */
+const PROJECT_GID = '1211034509616545';
+const SECTION_GID = '1211034509616546';
+const API = 'https://app.asana.com/api/1.0';
+const CF = {
+  contacto:'1211034511881727',
+  telefono:'1211034511881729',
+  email:'1211034511881731',
+  web:'1211034511881733',
+  notas:'1203622533214127',
+  lotes:'1212357191587417',
+  proyecto:'1212357191587672',
+  contactosAdicionales:'1215991631893795'
+};
+// Opciones hardcodeadas (mismo criterio que PROJ_CF del CRM: campos ya creados
+// manualmente en Asana, evita un paso de "descubrir campos" en cada sync).
+const LOTES_OPTIONS = [
+ {gid:"1212357191587422",name:"OBRA CIVIL"},{gid:"1212357191587418",name:"EXCAVACIONES Y MOVIMIENTO DE TIERRAS"},
+ {gid:"1212357191587419",name:"CONTENCIONES Y CIMENTACIONES"},{gid:"1212357191587425",name:"ESTRCTURA EMTALICA/CERRAJERIA/ENVOLVENTES"},
+ {gid:"1212357191587446",name:"PREFABRICADOS DE HORMIGON"},{gid:"1212357191587478",name:"ESTRUCTURAS"},
+ {gid:"1212357191587460",name:"ELECTRICIDAD"},{gid:"1212357191587528",name:"PREFABRICADOS"},
+ {gid:"1212357191587431",name:"PREFABRICADO DE MADERA"},{gid:"1212357191587492",name:"PAVIMENTOS"},
+ {gid:"1212357191587511",name:"PINTURAS"},{gid:"1212357191587586",name:"PINTURA MURAL"},
+ {gid:"1212357191587433",name:"BREEAM"},{gid:"1212357191587521",name:"PROJECT MANAGEMENT/ TECHNICAL DUE DILIGENCE - MEDIOAMBIENTAL ESG"},
+ {gid:"1212357191587427",name:"CONTAMINACION DE SUELOS"},{gid:"1212357191587463",name:"HYELLA DE CARBONO"},
+ {gid:"1212357191587467",name:"SOSTENIBILIDAD"},{gid:"1212357191587517",name:"FUENTES"},
+ {gid:"1212357191587589",name:"JARDINERIA"},{gid:"1212357191587596",name:"JARDIN VERTICAL FACHADA"},
+ {gid:"1212357191587480",name:"JARDINERIA ARTIFICIAL"},{gid:"1212357191587453",name:"INSTALACIONES MECANICAS"},
+ {gid:"1212357191587441",name:"ILUMINACION"},{gid:"1212357191587435",name:"ROTULOS"},
+ {gid:"1212357191587448",name:"DOMOTICA"},{gid:"1212357191587490",name:"PROTECCION CONTRA INCENDIOS"},
+ {gid:"1212357191587583",name:"CCTV y SEGURIDAD"},{gid:"1212357191587556",name:"TRANSPORTE VERTICAL"},
+ {gid:"1212357191587470",name:"PLAYGROUNDS"},{gid:"1212357191587429",name:"CERTIFICADOS JUEGOS INFANTILES"},
+ {gid:"1212357191587502",name:"MOBILIARIO"},{gid:"1212357191587423",name:"INGENIERIA"},
+ {gid:"1212357191587437",name:"ARQUITECTURA/CONCEPT"},{gid:"1212357191587563",name:"VISUALIZACION ARQUITECTURA 3D/TOURS INTERACTIVOS/ANIMACIONES 3D"},
+ {gid:"1212357191587575",name:"ESTUDIOS DE TRAFICO"},{gid:"1212357191587439",name:"ESTUDIOS GEOTECNICOS"},
+ {gid:"1212357191587609",name:"BRANDING"},{gid:"1212357191587614",name:"RENDERS"},
+ {gid:"1212357191587451",name:"CONSULTORIA"},{gid:"1212380362713461",name:"ARQUEOLOGIA"},
+ {gid:"1212357191587443",name:"ABOGADOS"},{gid:"1213775112679365",name:"ECUs"},
+ {gid:"1212357191587524",name:"SEGURIDAD Y SALUD"},{gid:"1212357191587465",name:"ORGANISMOS PUBLICOS - AYTO"},
+ {gid:"1212357191587493",name:"OTROS"},{gid:"1212357191587508",name:"Prefabricado hormigón"},
+ {gid:"1212509768327698",name:"CONTROL DE CALIDAD"},{gid:"1213110880414053",name:"ESTUDIO IMPACTO AMBIENTAL"},
+ {gid:"1213110880414066",name:"WAYFINDING"},{gid:"1213082669389817",name:"CARGADORES DE COCHES"},
+ {gid:"1213744425527513",name:"ECOP"},{gid:"1214167039241369",name:"FOTOVOLTAICA"}
+];
+const PROYECTO_OPTIONS = [
+ {gid:"1212357191587673",name:"1012401 Colmenar Maquinilla"},{gid:"1212357191587674",name:"Remodeling Gijón"},
+ {gid:"1212357191587678",name:"Otros"},{gid:"1212357191587679",name:"Eventos "},
+ {gid:"1212357191587694",name:"Zenia Boulevar"},{gid:"1212357191587711",name:"ADN Alcorcón"},
+ {gid:"1212357191587769",name:"Pio XII"},{gid:"1212443254529073",name:"LinkedIN"},
+ {gid:"1215753081726553",name:"Valladolid"}
+];
+const OPT_FIELDS = 'name,completed,permalink_url,custom_fields.gid,custom_fields.name,custom_fields.type,custom_fields.text_value,custom_fields.multi_enum_values.gid,custom_fields.multi_enum_values.name';
+
+/* ==================== STATE ==================== */
+let PAT = localStorage.getItem('pdev_pat') || '';
+let tasks = [];
+let filters = { q:'', lotes:new Set(), proyecto:new Set() };
+let sortState = { key:'name', dir:1 };
+let panelGid = null; // null = nuevo proveedor
+let currentAsanaUrl = '#'; // permalink_url del proveedor abierto en el panel
+const PROV_COLS = [
+  {key:'name', label:'Empresa'}, {key:'contacto', label:'Contacto'},
+  {key:'telefono', label:'Teléfono'}, {key:'email', label:'Email'},
+  {key:'lotes', label:'Lotes'}, {key:'proyecto', label:'Proyecto'}
+];
+
+/* ==================== HELPERS ==================== */
+function toast(msg, isErr){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show' + (isErr?' err':'');
+  setTimeout(()=>t.classList.remove('show'), 3500);
+}
+function cfText(task, gid){
+  const f = (task.custom_fields||[]).find(c=>c.gid===gid);
+  return f ? (f.text_value||'') : '';
+}
+function cfMulti(task, gid){
+  const f = (task.custom_fields||[]).find(c=>c.gid===gid);
+  return f ? (f.multi_enum_values||[]) : [];
+}
+function saveCache(){
+  // No bloqueante: si el navegador restringe/agota la cuota de localStorage
+  // (frecuente al abrir el archivo como file:// en vez de servido por http/https),
+  // la sincronización con Asana debe seguir funcionando igual — solo se pierde
+  // la caché local entre sesiones, no la app entera (bug real detectado 2026-09-18:
+  // un fallo de setItem aquí abortaba renderTable() aunque los datos ya estaban
+  // en memoria, mostrando "Error al sincronizar" con la tabla vacía).
+  try{
+    localStorage.setItem('pdev_cache', JSON.stringify({ts:Date.now(), tasks}));
+  }catch(e){
+    console.warn('No se pudo guardar la caché local de Proveedores Dev:', e.message);
+    toast('Sincronizado (sin caché local: cuota de almacenamiento del navegador agotada)');
+  }
+}
+async function asanaFetch(path, opts={}){
+  if(!PAT) throw new Error('Falta el PAT de Asana (ver Configuración)');
+  const res = await fetch(API+path, Object.assign({}, opts, {
+    headers: Object.assign({'Authorization':'Bearer '+PAT}, opts.headers||{})
+  }));
+  if(!res.ok){
+    let msg = res.status+' '+res.statusText;
+    try{ const j = await res.json(); if(j.errors&&j.errors[0]) msg = j.errors[0].message; }catch(e){}
+    throw new Error(msg);
+  }
+  if(res.status===204) return null;
+  return res.json();
+}
+
+/* ==================== SYNC ==================== */
+async function fetchAllTasks(){
+  let all = [];
+  let offset = null;
+  do{
+    let path = `/tasks?project=${PROJECT_GID}&opt_fields=${encodeURIComponent(OPT_FIELDS)}&limit=100`;
+    if(offset) path += `&offset=${encodeURIComponent(offset)}`;
+    const r = await asanaFetch(path);
+    all = all.concat(r.data);
+    offset = r.next_page ? r.next_page.offset : null;
+  }while(offset);
+  return all;
+}
+async function syncNow(){
+  if(!PAT){ toast('Configura el PAT de Asana primero', true); switchView('config'); return; }
+  document.getElementById('sync-status').textContent = 'Sincronizando…';
+  try{
+    tasks = await fetchAllTasks();
+    document.getElementById('sync-status').textContent = 'Sincronizado ' + new Date().toLocaleTimeString('es-ES');
+    renderFilterPickers();
+    renderTable();
+    saveCache();
+  }catch(e){
+    toast('Error al sincronizar: '+e.message, true);
+    document.getElementById('sync-status').textContent = 'Error de sincronización';
+  }
+}
+function loadCache(){
+  try{
+    const c = JSON.parse(localStorage.getItem('pdev_cache')||'null');
+    if(c && c.tasks){ tasks = c.tasks; return true; }
+  }catch(e){}
+  return false;
+}
+
+/* ==================== FILTRADO / TABLA ==================== */
+function visible(){
+  const q = filters.q.trim().toLowerCase();
+  return tasks.filter(t=>{
+    if(filters.lotes.size){
+      const g = cfMulti(t,CF.lotes).map(o=>o.gid);
+      if(!g.some(x=>filters.lotes.has(x))) return false;
+    }
+    if(filters.proyecto.size){
+      const g = cfMulti(t,CF.proyecto).map(o=>o.gid);
+      if(!g.some(x=>filters.proyecto.has(x))) return false;
+    }
+    if(q){
+      const hay = [t.name, cfText(t,CF.contacto), cfText(t,CF.email), cfText(t,CF.telefono), cfText(t,CF.notas)]
+        .join(' ').toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+function sortVal(t,key){
+  if(key==='name') return (t.name||'').toLowerCase();
+  if(key==='contacto') return cfText(t,CF.contacto).toLowerCase();
+  if(key==='telefono') return cfText(t,CF.telefono).toLowerCase();
+  if(key==='email') return cfText(t,CF.email).toLowerCase();
+  if(key==='lotes') return cfMulti(t,CF.lotes).map(o=>o.name).join(', ').toLowerCase();
+  if(key==='proyecto') return cfMulti(t,CF.proyecto).map(o=>o.name).join(', ').toLowerCase();
+  return '';
+}
+function sortProv(key){
+  if(sortState.key===key) sortState.dir *= -1; else { sortState.key=key; sortState.dir=1; }
+  renderTable();
+}
+function renderThead(){
+  const thead = document.getElementById('prov-thead');
+  thead.innerHTML = '<tr>' + PROV_COLS.map(c=>{
+    const sorted = sortState.key===c.key;
+    const arrow = sorted ? (sortState.dir===1?'↑':'↓') : '↕';
+    return `<th class="${sorted?'sorted':''}" onclick="sortProv('${c.key}')">${c.label}<span class="sort-ic">${arrow}</span></th>`;
+  }).join('') + '</tr>';
+}
+function chipsHtml(opts){
+  if(!opts.length) return '<span class="mut">—</span>';
+  return '<div class="chip-row">' + opts.map(o=>`<span class="chip">${e(o.name)}</span>`).join('') + '</div>';
+}
+function e(s){ return (s==null?'':String(s)).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function renderTable(){
+  const rows = visible().slice().sort((a,b)=>{
+    const va=sortVal(a,sortState.key), vb=sortVal(b,sortState.key);
+    return va.localeCompare(vb,'es',{numeric:true}) * sortState.dir;
+  });
+  renderThead();
+  document.getElementById('prov-tbody').innerHTML = rows.map(t=>`
+    <tr onclick="openPanel('${t.gid}')">
+      <td><b>${e(t.name)||'<span class="mut">(sin nombre)</span>'}</b></td>
+      <td>${e(cfText(t,CF.contacto))||'<span class="mut">—</span>'}</td>
+      <td>${e(cfText(t,CF.telefono))||'<span class="mut">—</span>'}</td>
+      <td>${e(cfText(t,CF.email))||'<span class="mut">—</span>'}</td>
+      <td>${chipsHtml(cfMulti(t,CF.lotes))}</td>
+      <td>${chipsHtml(cfMulti(t,CF.proyecto))}</td>
+    </tr>`).join('');
+  document.getElementById('stat-total').textContent = tasks.length;
+  document.getElementById('stat-visible').textContent = rows.length;
+  const lotesEnUso = new Set();
+  tasks.forEach(t=>cfMulti(t,CF.lotes).forEach(o=>lotesEnUso.add(o.gid)));
+  document.getElementById('stat-lotes').textContent = lotesEnUso.size;
+}
+function clearFilters(){
+  filters = { q:'', lotes:new Set(), proyecto:new Set() };
+  document.getElementById('f-search').value = '';
+  hideSuggestions();
+  renderFilterPickers();
+  renderTable();
+}
+
+/* ==================== BUSCADOR / AUTOCOMPLETAR ==================== */
+function onSearchInput(val){
+  filters.q = val;
+  renderTable();
+  renderSuggestions(val);
+}
+function renderSuggestions(q){
+  const box = document.getElementById('search-suggest');
+  const term = q.trim().toLowerCase();
+  if(!term){ box.classList.add('hidden'); box.innerHTML=''; return; }
+  const matches = tasks.filter(t=>{
+    const hay = [t.name, cfText(t,CF.contacto), cfText(t,CF.email)].join(' ').toLowerCase();
+    return hay.includes(term);
+  }).slice(0,8);
+  if(!matches.length){ box.classList.add('hidden'); box.innerHTML=''; return; }
+  box.innerHTML = matches.map(t=>`
+    <div class="sugg-item" onmousedown="selectSuggestion('${t.gid}')">
+      <b>${e(t.name)||'(sin nombre)'}</b>
+      ${cfText(t,CF.contacto)?`<div class="sugg-mut">${e(cfText(t,CF.contacto))}</div>`:''}
+    </div>`).join('');
+  box.classList.remove('hidden');
+}
+function selectSuggestion(gid){
+  hideSuggestions();
+  document.getElementById('f-search').value = '';
+  filters.q = '';
+  renderTable();
+  openPanel(gid);
+}
+function onSearchKeydown(ev){
+  if(ev.key==='Escape') hideSuggestions();
+}
+function onSearchBlur(){
+  // pequeño retraso para que el mousedown de la sugerencia se dispare antes del blur
+  setTimeout(hideSuggestions, 150);
+}
+function hideSuggestions(){
+  const box = document.getElementById('search-suggest');
+  box.classList.add('hidden');
+  box.innerHTML = '';
+}
+
+/* ==================== TAG PICKER (filtros y panel) ==================== */
+function renderTagPicker(containerId, allOptions, selectedSet, onChange, placeholder){
+  const el = document.getElementById(containerId);
+  const dropId = containerId+'-drop';
+  el.innerHTML = `
+    <div class="tp-chips">${
+      [...selectedSet].map(gid=>{
+        const opt = allOptions.find(o=>o.gid===gid);
+        if(!opt) return '';
+        return `<span class="tp-chip">${e(opt.name)}<button onclick="tpRemove('${containerId}','${gid}')">&times;</button></span>`;
+      }).join('') || `<span class="mut" style="font-size:12px;">${placeholder||'Ninguno'}</span>`
+    }</div>
+    <button class="tp-add" onclick="tpToggle('${containerId}')"><i class="ti ti-plus"></i> añadir</button>
+    <div class="tp-dropdown hidden" id="${dropId}">
+      <input type="text" class="tp-search" placeholder="Buscar..." oninput="tpFilter('${containerId}', this.value)">
+      <div class="tp-options" id="${dropId}-opts"></div>
+    </div>`;
+  el._allOptions = allOptions; el._selected = selectedSet; el._onChange = onChange;
+  tpRenderOptions(containerId, '');
+}
+function tpRenderOptions(containerId, q){
+  const el = document.getElementById(containerId);
+  const opts = el._allOptions.filter(o=>o.name.toLowerCase().includes(q.toLowerCase()));
+  document.getElementById(containerId+'-drop-opts').innerHTML = opts.map(o=>`
+    <label class="tp-opt"><input type="checkbox" ${el._selected.has(o.gid)?'checked':''} onchange="tpToggleOpt('${containerId}','${o.gid}',this.checked)"> ${e(o.name)}</label>
+  `).join('') || '<div class="tp-opt mut">Sin resultados</div>';
+}
+function tpFilter(containerId, q){ tpRenderOptions(containerId, q); }
+function tpToggle(containerId){
+  document.getElementById(containerId+'-drop').classList.toggle('hidden');
+}
+function tpToggleOpt(containerId, gid, checked){
+  const el = document.getElementById(containerId);
+  if(checked) el._selected.add(gid); else el._selected.delete(gid);
+  renderTagPicker(containerId, el._allOptions, el._selected, el._onChange, el._placeholder);
+  document.getElementById(containerId+'-drop').classList.remove('hidden');
+  document.getElementById(containerId+'-drop').classList.toggle('hidden', false);
+  if(el._onChange) el._onChange([...el._selected]);
+}
+function tpRemove(containerId, gid){
+  const el = document.getElementById(containerId);
+  el._selected.delete(gid);
+  renderTagPicker(containerId, el._allOptions, el._selected, el._onChange, el._placeholder);
+  if(el._onChange) el._onChange([...el._selected]);
+}
+function renderFilterPickers(){
+  renderTagPicker('filter-lotes', LOTES_OPTIONS, filters.lotes, ()=>renderTable(), 'Filtrar por Lotes');
+  renderTagPicker('filter-proyecto', PROYECTO_OPTIONS, filters.proyecto, ()=>renderTable(), 'Filtrar por Proyecto');
+}
+
+/* ==================== PANEL LATERAL ==================== */
+function openPanel(gid){
+  panelGid = gid;
+  const t = tasks.find(x=>x.gid===gid);
+  document.getElementById('panel-name').value = t.name||'';
+  currentAsanaUrl = t.permalink_url||'#';
+  document.getElementById('btn-delete').classList.remove('hidden');
+  renderPanelInfo(t);
+  renderPanelContactos(t);
+  renderPanelActividad(t);
+  switchPanelTab('info');
+  document.getElementById('overlay').classList.remove('hidden');
+  document.getElementById('panel').classList.add('open');
+}
+function openNewPanel(){
+  panelGid = null;
+  document.getElementById('panel-name').value = '';
+  document.getElementById('btn-delete').classList.add('hidden');
+  currentAsanaUrl = '#';
+  renderPanelInfo(null);
+  document.getElementById('ptab-contactos').innerHTML = '<p class="mut">Guarda el proveedor para poder añadir contactos adicionales.</p>';
+  document.getElementById('ptab-actividad').innerHTML = '<p class="mut">Guarda el proveedor para poder añadir actividad.</p>';
+  switchPanelTab('info');
+  document.getElementById('overlay').classList.remove('hidden');
+  document.getElementById('panel').classList.add('open');
+  setTimeout(()=>document.getElementById('panel-name').focus(), 200);
+}
+function onOpenAsanaClick(ev){
+  ev.preventDefault();
+  if(!currentAsanaUrl || currentAsanaUrl==='#'){
+    toast('Este proveedor todavía no tiene enlace de Asana (guárdalo primero)', true);
+    return false;
+  }
+  const win = window.open(currentAsanaUrl, '_blank', 'noopener');
+  if(!win){
+    // El navegador bloqueó la ventana nueva (frecuente con políticas de bloqueo de
+    // pop-ups en ordenadores de empresa) — antes esto fallaba en silencio, sin ningún
+    // aviso ("no funciona el botón"). Ahora se avisa y se ofrece el enlace para copiar.
+    prompt('El navegador bloqueó la ventana nueva. Copia este enlace y pégalo en tu navegador:', currentAsanaUrl);
+  }
+  return false;
+}
+function closePanel(){
+  document.getElementById('overlay').classList.add('hidden');
+  document.getElementById('panel').classList.remove('open');
+  panelGid = undefined;
+}
+function switchPanelTab(tab){
+  document.querySelectorAll('#panel-tabs .tab').forEach(el=>el.classList.toggle('active', el.dataset.tab===tab));
+  document.getElementById('ptab-info').classList.toggle('hidden', tab!=='info');
+  document.getElementById('ptab-contactos').classList.toggle('hidden', tab!=='contactos');
+  document.getElementById('ptab-actividad').classList.toggle('hidden', tab!=='actividad');
+}
+
+function renderPanelInfo(t){
+  const contacto = t?cfText(t,CF.contacto):'';
+  const telefono = t?cfText(t,CF.telefono):'';
+  const email = t?cfText(t,CF.email):'';
+  const web = t?cfText(t,CF.web):'';
+  const notas = t?cfText(t,CF.notas):'';
+  document.getElementById('ptab-info').innerHTML = `
+    <div class="field"><label>Contacto (CONTACTO)</label><input type="text" id="f-contacto" value="${e(contacto)}" onblur="onFieldBlur('contacto','${CF.contacto}',this.value)"></div>
+    <div class="field"><label>Teléfono</label><input type="text" id="f-telefono" value="${e(telefono)}" onblur="onFieldBlur('telefono','${CF.telefono}',this.value)"></div>
+    <div class="field"><label>Email</label><input type="text" id="f-email" value="${e(email)}" onblur="onFieldBlur('email','${CF.email}',this.value)"></div>
+    <div class="field"><label>Web</label><input type="text" id="f-web" value="${e(web)}" onblur="onFieldBlur('web','${CF.web}',this.value)"></div>
+    <div class="field"><label>Notes</label><textarea id="f-notas" onblur="onFieldBlur('notas','${CF.notas}',this.value)">${e(notas)}</textarea></div>
+    <div class="field"><label>Lotes</label><div id="panel-lotes"></div></div>
+    <div class="field"><label>Proyecto</label><div id="panel-proyecto"></div></div>
+    ${!t?'<button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="createProveedor()"><i class="ti ti-device-floppy"></i> Crear proveedor</button>':''}
+  `;
+  const lotesSel = new Set(t?cfMulti(t,CF.lotes).map(o=>o.gid):[]);
+  const proySel = new Set(t?cfMulti(t,CF.proyecto).map(o=>o.gid):[]);
+  renderTagPicker('panel-lotes', LOTES_OPTIONS, lotesSel, (arr)=>{ if(t) saveMultiField(CF.lotes, arr); }, 'Sin lotes asignados');
+  renderTagPicker('panel-proyecto', PROYECTO_OPTIONS, proySel, (arr)=>{ if(t) saveMultiField(CF.proyecto, arr); }, 'Sin proyecto asignado');
+}
+
+/* ==================== CONTACTOS (principal + adicionales) ==================== */
+function getExtraContacts(t){
+  const raw = cfText(t, CF.contactosAdicionales);
+  if(!raw) return [];
+  try{ const arr = JSON.parse(raw); return Array.isArray(arr)?arr:[]; }catch(e){ return []; }
+}
+async function saveExtraContacts(gid, arr){
+  try{
+    await asanaFetch(`/tasks/${gid}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({data:{custom_fields:{[CF.contactosAdicionales]: JSON.stringify(arr)}}})});
+    const t = tasks.find(x=>x.gid===gid);
+    if(t){ const f = t.custom_fields.find(c=>c.gid===CF.contactosAdicionales); if(f) f.text_value = JSON.stringify(arr); }
+    saveCache();
+    toast('Contactos actualizados');
+  }catch(e){ toast('Error al guardar contactos: '+e.message, true); }
+}
+function contactoFormHtml(idx, c){
+  c = c || {nombre:'',cargo:'',email:'',tel:''};
+  return `
+    <div class="field"><label>Nombre</label><input type="text" id="cf-nombre-${idx}" value="${e(c.nombre)}"></div>
+    <div class="field"><label>Cargo</label><input type="text" id="cf-cargo-${idx}" value="${e(c.cargo)}"></div>
+    <div class="field"><label>Email</label><input type="text" id="cf-email-${idx}" value="${e(c.email)}"></div>
+    <div class="field"><label>Teléfono</label><input type="text" id="cf-tel-${idx}" value="${e(c.tel)}"></div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-primary" onclick="onSaveExtraContact('${idx}')"><i class="ti ti-device-floppy"></i> Guardar</button>
+      <button class="btn" onclick="renderPanelContactos(tasks.find(x=>x.gid==='${panelGid}'))"><i class="ti ti-x"></i> Cancelar</button>
+    </div>`;
+}
+function renderPanelContactos(t){
+  if(!t) return;
+  const contacto = cfText(t,CF.contacto), telefono = cfText(t,CF.telefono), email = cfText(t,CF.email);
+  const extra = getExtraContacts(t);
+  document.getElementById('ptab-contactos').innerHTML = `
+    <h4 style="margin:0 0 6px;font-size:13px;color:var(--text-mut);text-transform:uppercase;letter-spacing:.03em;">Contacto principal</h4>
+    <div class="field"><label>Nombre (CONTACTO)</label><input type="text" value="${e(contacto)}" onblur="onFieldBlur('contacto','${CF.contacto}',this.value)"></div>
+    <div class="field"><label>Teléfono</label><input type="text" value="${e(telefono)}" onblur="onFieldBlur('telefono','${CF.telefono}',this.value)"></div>
+    <div class="field"><label>Email</label><input type="text" value="${e(email)}" onblur="onFieldBlur('email','${CF.email}',this.value)"></div>
+    <hr style="border-color:var(--border);margin:16px 0;">
+    <h4 style="margin:0 0 6px;font-size:13px;color:var(--text-mut);text-transform:uppercase;letter-spacing:.03em;">Contactos adicionales</h4>
+    <div id="extra-list">${extra.length ? extra.map((c,i)=>`
+      <div style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div id="extra-view-${i}">
+          <b>${e(c.nombre)||'(sin nombre)'}</b>${c.cargo?' · '+e(c.cargo):''}<br>
+          <span class="mut" style="font-size:12px;">${e(c.email)||''}${c.email&&c.tel?' · ':''}${e(c.tel)||''}</span>
+          <div style="margin-top:6px;display:flex;gap:6px;">
+            <button class="btn" onclick="onEditExtraContact(${i})"><i class="ti ti-pencil"></i></button>
+            <button class="btn btn-danger" onclick="onDeleteExtraContact(${i})"><i class="ti ti-trash"></i></button>
+          </div>
+        </div>
+      </div>`).join('') : '<p class="mut">Sin contactos adicionales.</p>'}</div>
+    <div id="extra-form-wrap"></div>
+    <button class="btn" style="margin-top:6px;" onclick="onAddExtraContact()"><i class="ti ti-plus"></i> Añadir contacto</button>
+  `;
+}
+function onAddExtraContact(){
+  document.getElementById('extra-form-wrap').innerHTML = contactoFormHtml('new', null);
+}
+function onEditExtraContact(idx){
+  const t = tasks.find(x=>x.gid===panelGid);
+  const extra = getExtraContacts(t);
+  document.getElementById('extra-view-'+idx).innerHTML = contactoFormHtml(idx, extra[idx]);
+}
+function onDeleteExtraContact(idx){
+  if(!confirm('¿Eliminar este contacto adicional?')) return;
+  const t = tasks.find(x=>x.gid===panelGid);
+  const extra = getExtraContacts(t);
+  extra.splice(idx,1);
+  saveExtraContacts(panelGid, extra).then(()=>renderPanelContactos(tasks.find(x=>x.gid===panelGid)));
+}
+function onSaveExtraContact(idx){
+  const nombre = document.getElementById('cf-nombre-'+idx).value.trim();
+  const cargo = document.getElementById('cf-cargo-'+idx).value.trim();
+  const email = document.getElementById('cf-email-'+idx).value.trim();
+  const tel = document.getElementById('cf-tel-'+idx).value.trim();
+  if(!nombre){ toast('El nombre del contacto es obligatorio', true); return; }
+  const t = tasks.find(x=>x.gid===panelGid);
+  const extra = getExtraContacts(t);
+  const contact = {nombre, cargo, email, tel};
+  if(idx==='new') extra.push(contact); else extra[idx] = contact;
+  saveExtraContacts(panelGid, extra).then(()=>renderPanelContactos(tasks.find(x=>x.gid===panelGid)));
+}
+
+async function renderPanelActividad(t){
+  const el = document.getElementById('ptab-actividad');
+  el.innerHTML = '<p class="mut">Cargando actividad…</p>';
+  try{
+    const r = await asanaFetch(`/tasks/${t.gid}/stories?opt_fields=text,created_at,created_by.name`);
+    const stories = (r.data||[]).filter(s=>s.text);
+    el.innerHTML = (stories.length?stories.map(s=>`
+      <div class="cmt"><div class="cmt-meta">${e(s.created_by?s.created_by.name:'—')} · ${new Date(s.created_at).toLocaleString('es-ES')}</div>${e(s.text)}</div>
+    `).join(''):'<p class="mut">Sin comentarios todavía.</p>') + `
+      <div class="compose">
+        <textarea id="new-cmt" placeholder="Escribe un comentario..."></textarea>
+        <button class="btn btn-primary" onclick="sendComment('${t.gid}')"><i class="ti ti-send"></i></button>
+      </div>`;
+  }catch(e){
+    el.innerHTML = '<p class="mut">Error al cargar actividad: '+e.message+'</p>';
+  }
+}
+async function sendComment(gid){
+  const txt = document.getElementById('new-cmt').value.trim();
+  if(!txt) return;
+  try{
+    await asanaFetch(`/tasks/${gid}/stories`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({data:{text:txt}})});
+    renderPanelActividad(tasks.find(x=>x.gid===gid));
+    toast('Comentario añadido');
+  }catch(e){ toast('Error al comentar: '+e.message, true); }
+}
+
+/* ==================== CRUD ==================== */
+async function onNameBlur(){
+  const val = document.getElementById('panel-name').value.trim();
+  if(panelGid==null) return; // en modo "nuevo" el nombre se guarda al crear
+  try{
+    await asanaFetch(`/tasks/${panelGid}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({data:{name:val}})});
+    const t = tasks.find(x=>x.gid===panelGid); if(t) t.name = val;
+    renderTable();
+    toast('Nombre actualizado');
+  }catch(e){ toast('Error al guardar nombre: '+e.message, true); }
+}
+async function onFieldBlur(fieldKey, cfGid, val){
+  if(panelGid==null) return; // se guardará todo junto al crear
+  try{
+    await asanaFetch(`/tasks/${panelGid}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({data:{custom_fields:{[cfGid]:val}}})});
+    const t = tasks.find(x=>x.gid===panelGid);
+    if(t){ const f = t.custom_fields.find(c=>c.gid===cfGid); if(f) f.text_value = val; }
+    renderTable();
+    toast('Guardado');
+  }catch(e){ toast('Error al guardar: '+e.message, true); }
+}
+async function saveMultiField(cfGid, gidsArr){
+  if(panelGid==null) return;
+  try{
+    await asanaFetch(`/tasks/${panelGid}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({data:{custom_fields:{[cfGid]:gidsArr}}})});
+    const t = tasks.find(x=>x.gid===panelGid);
+    if(t){
+      const f = t.custom_fields.find(c=>c.gid===cfGid);
+      const allOpts = cfGid===CF.lotes ? LOTES_OPTIONS : PROYECTO_OPTIONS;
+      if(f) f.multi_enum_values = allOpts.filter(o=>gidsArr.includes(o.gid));
+    }
+    renderTable();
+    toast('Guardado');
+  }catch(e){ toast('Error al guardar: '+e.message, true); }
+}
+async function createProveedor(){
+  const name = document.getElementById('panel-name').value.trim();
+  if(!name){ toast('El nombre de la empresa es obligatorio', true); return; }
+  const lotesSel = document.getElementById('panel-lotes')._selected;
+  const proySel = document.getElementById('panel-proyecto')._selected;
+  const body = {
+    data:{
+      name,
+      projects:[PROJECT_GID],
+      memberships:[{project:PROJECT_GID, section:SECTION_GID}],
+      custom_fields:{
+        [CF.contacto]: document.getElementById('f-contacto').value.trim(),
+        [CF.telefono]: document.getElementById('f-telefono').value.trim(),
+        [CF.email]: document.getElementById('f-email').value.trim(),
+        [CF.web]: document.getElementById('f-web').value.trim(),
+        [CF.notas]: document.getElementById('f-notas').value.trim(),
+        [CF.lotes]: [...lotesSel],
+        [CF.proyecto]: [...proySel]
+      }
+    }
+  };
+  try{
+    const r = await asanaFetch('/tasks', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+    const full = await asanaFetch(`/tasks/${r.data.gid}?opt_fields=${encodeURIComponent(OPT_FIELDS)}`);
+    tasks.push(full.data);
+    renderTable();
+    saveCache();
+    toast('Proveedor creado');
+    openPanel(full.data.gid);
+  }catch(e){ toast('Error al crear proveedor: '+e.message, true); }
+}
+async function onDeleteClick(){
+  if(panelGid==null) return;
+  const t = tasks.find(x=>x.gid===panelGid);
+  if(!confirm(`¿Eliminar permanentemente "${t.name}" de Asana? Esta acción no se puede deshacer.`)) return;
+  try{
+    await asanaFetch(`/tasks/${panelGid}`, {method:'DELETE'});
+    tasks = tasks.filter(x=>x.gid!==panelGid);
+    closePanel();
+    renderTable();
+    saveCache();
+    toast('Proveedor eliminado');
+  }catch(e){ toast('Error al eliminar: '+e.message, true); }
+}
+
+/* ==================== EXPORT ==================== */
+function exportRows(onlyFiltered){
+  const rows = onlyFiltered ? visible() : tasks;
+  return rows.map(t=>({
+    'Empresa': t.name||'',
+    'Contacto': cfText(t,CF.contacto),
+    'Teléfono': cfText(t,CF.telefono),
+    'Email': cfText(t,CF.email),
+    'Web': cfText(t,CF.web),
+    'Notes': cfText(t,CF.notas),
+    'Lotes': cfMulti(t,CF.lotes).map(o=>o.name).join(', '),
+    'Proyecto': cfMulti(t,CF.proyecto).map(o=>o.name).join(', ')
+  }));
+}
+function exportExcel(){
+  try{
+    const onlyFiltered = document.getElementById('export-onlyfiltered').checked;
+    const rows = exportRows(onlyFiltered);
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const cols = Object.keys(rows[0]||{});
+    ws['!cols'] = cols.map(c=>({wch: Math.min(80, Math.max(c.length, ...rows.map(r=>String(r[c]||'').length)) + 2)}));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Proveedores');
+    XLSX.writeFile(wb, 'proveedores_dev_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  }catch(e){ toast('Error al exportar Excel: '+e.message, true); }
+}
+function exportPDF(){
+  try{
+    const onlyFiltered = document.getElementById('export-onlyfiltered').checked;
+    const rows = exportRows(onlyFiltered);
+    const doc = new jspdf.jsPDF({orientation:'landscape'});
+    doc.text('Proveedores Dev — '+new Date().toLocaleDateString('es-ES'), 14, 12);
+    doc.autoTable({
+      startY: 18,
+      head: [Object.keys(rows[0]||{})],
+      body: rows.map(r=>Object.values(r)),
+      styles:{fontSize:7}
+    });
+    doc.save('proveedores_dev_'+new Date().toISOString().slice(0,10)+'.pdf');
+  }catch(e){ toast('Error al exportar PDF: '+e.message, true); }
+}
+
+/* ==================== NAV / INIT ==================== */
+function switchView(v){
+  document.querySelectorAll('.side-item').forEach(el=>el.classList.toggle('active', el.dataset.view===v));
+  document.getElementById('view-proveedores').classList.toggle('hidden', v!=='proveedores');
+  document.getElementById('view-config').classList.toggle('hidden', v!=='config');
+  document.getElementById('view-title').textContent = v==='proveedores' ? 'Proveedores' : 'Configuración';
+  document.getElementById('btn-nuevo').classList.toggle('hidden', v!=='proveedores');
+  if(v==='config') document.getElementById('cfg-pat').value = PAT;
+}
+function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('collapsed'); }
+function savePat(){
+  PAT = document.getElementById('cfg-pat').value.trim();
+  localStorage.setItem('pdev_pat', PAT);
+  toast('PAT guardado');
+  switchView('proveedores');
+  syncNow();
+}
+function clearCache(){
+  localStorage.removeItem('pdev_cache');
+  tasks = [];
+  renderTable();
+  toast('Caché local eliminada');
+}
+
+(function init(){
+  renderFilterPickers();
+  if(loadCache()) renderTable();
+  if(PAT) syncNow();
+  else switchView('config');
+  setInterval(()=>{ if(PAT) syncNow(); }, 5*60*1000);
+})();
+</script>
+</body>
+</html>
